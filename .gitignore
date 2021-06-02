@@ -1,0 +1,5 @@
+.envrc
+*.pyc
+*.jpg
+*.zip
+*.csv
