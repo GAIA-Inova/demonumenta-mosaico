@@ -1,0 +1,5 @@
+click==8.0.1
+Pillow==8.2.0
+requests==2.25.1
+rows==0.4.1
+tqdm==4.61.0

@@ -1,4 +1,11 @@
-odict_keys([
+# Mosaico Demonumenta
+
+Esse repositório abriga o código criado por Bernardo Fontes para extrair as imagens classificadas pelos alunos da [FAUUSP](https://www.fau.usp.br/) durante os experimentos realizados no projeto [Demonumenta](https://sites.usp.br/demonumenta/demonumenta-apre/), em colaboração com outras instituições e centros de pesquisa, como o [C4AI - Inova USP](http://c4ai.inova.usp.br/pt/home-2/), o [CITI - USP](http://www.lsi.usp.br/citi/), o [Museu Paulista da USP](http://mp.usp.br/index.php), o  [MIT Open Documentary Lab](http://opendoclab.mit.edu/) e o [PISA](https://pisa.hc.fm.usp.br/) e co-realização da Pró Reitoria de Cultura e Extensão da USP.
+
+O código abaixo lista todas as colunas formatadas pela biblioteca [rows](https://pypi.org/project/rows/) a partir da planilha com as respostas dos alunos:
+
+```
+[
         'carimbo_de_datahora',
         'seu_email',
         'link_do_identificador_label_copie_e_cole_a_url_que_aparece_na_coluna_da_esquerda_ex_httpwwwwikidataorgentityq59924915_a_informacao_qxxxxxxxx_e_muito_importante',
@@ -55,4 +62,5 @@ odict_keys([
         'field_53',
         'fauna',
         'anjo'
-])
+]
+```

@@ -56,7 +56,6 @@ def process_image(data, image_path):
         coords = data[caption]
         if not coords:
             continue
-        print(data["item_id"], caption, coords)
 
         caption_dir = MOSAIC_DIR / caption
         if not caption_dir.exists():
