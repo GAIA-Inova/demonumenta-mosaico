@@ -31,7 +31,7 @@ def download_image(item, image_url, from_local=False):
     """
     if from_local:
         image_path = OFFLINE_IMGS_DIR / f"{item}.jpg"
-        image_url = f'file://{image_path.resolve()}'
+        image_url = f"file://{image_path.resolve()}"
 
     suffix = Path(image_url).suffix or ".jpg"
     image_path = IMAGES_DIR / f"{item}{suffix}"
@@ -52,7 +52,12 @@ def download_image(item, image_url, from_local=False):
         raise UnexistingImageException(f"Não conseguiu baixar para o item {item} a url {image_url}")
 
     with Image.open(io.BytesIO(response.content)) as im:
-        im.save(image_path, format="JPEG", quality="maximum", icc_profile=im.info.get("icc_profile"))
+        im.save(
+            image_path,
+            format="JPEG",
+            quality="maximum",
+            icc_profile=im.info.get("icc_profile"),
+        )
 
     return image_path
 
@@ -96,9 +101,9 @@ def clean_row(row):
     entry = row._asdict()
     img_url = entry[IMG_URL_COL]
     # alguns colaboradores colocaram somente o código Q ao invés da URL para o item
-    if entry[ITEM_URL_COL].startswith('Q'):
+    if entry[ITEM_URL_COL].startswith("Q"):
         item_id = entry[ITEM_URL_COL].strip()
-        entry[IMG_URL_COL] = f'http://www.wikidata.org/entity/{item_id}'
+        entry[IMG_URL_COL] = f"http://www.wikidata.org/entity/{item_id}"
 
     item_url = urllib.parse.urlparse(entry[ITEM_URL_COL])
     item_id = item_url.path.split("/")[-1]
@@ -106,14 +111,14 @@ def clean_row(row):
     entry["img_url"] = img_url
 
     should_skip = False
-    email_regex = '^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$'
+    email_regex = "^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$"
     if img_url.strip() == "imagem do computador" or "drive.google.com" in img_url:
-        entry['local_file'] = True
+        entry["local_file"] = True
     # esses são erros que impedem o processamento da imagem já que não podemos baixá-la
     if re.search(email_regex, img_url):
         errors_list.append("Link da imagem com email (respostas antigas)")
         should_skip = True
-    if not item_id.startswith('Q'):
+    if not item_id.startswith("Q"):
         errors_list.append("Link do item está errado (provavelmente com link da imagem)")
         should_skip = True
 
@@ -141,9 +146,7 @@ def clean_row(row):
             # cada tupla de coordenada deve ter somente 4 valores
             invalid = False
             if len(coord) != 4:
-                errors_list.append(
-                    f"Categoria {caption} com área de corte com mais de 4 pontos."
-                )
+                errors_list.append(f"Categoria {caption} com área de corte com mais de 4 pontos.")
                 invalid = True
 
             if invalid:

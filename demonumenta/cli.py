@@ -26,7 +26,9 @@ def crop_bboxes(filename):
             if skip_row:
                 continue
         try:
-            image_path = csv_parser.download_image(entry["item_id"], entry["img_url"], from_local=entry.get('local_file'))
+            image_path = csv_parser.download_image(
+                entry["item_id"], entry["img_url"], from_local=entry.get("local_file")
+            )
             csv_parser.process_image(entry, image_path)
         except UnidentifiedImageError:
             print(f"{entry['item_id']} - ERRO - linha {i + 2} por {entry['seu_email']}:")
@@ -34,6 +36,7 @@ def crop_bboxes(filename):
         except csv_parser.UnexistingImageException as e:
             print(f"{entry['item_id']} - ERRO - linha {i + 2} por {entry['seu_email']}:")
             print(f"\t{e}")
+
 
 if __name__ == "__main__":
     command_line_entrypoint()
