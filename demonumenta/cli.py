@@ -9,7 +9,7 @@ import csv_parser
 @click.group()
 def command_line_entrypoint():
     """
-    Ferramenta pra explorar imagens do dataset Open Images V6
+    Ferramenta para explorar imagens do Museu Paulista para o projeto Demonumenta
     """
     pass
 
