@@ -1,7 +1,10 @@
 .envrc
 *.pyc
 *.jpg
+*.png
 *.zip
 *.csv
 *.csv#
 *.log
+AAA_*
+militao-*
