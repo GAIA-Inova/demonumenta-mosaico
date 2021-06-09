@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import shutil
+import re
 import io
 import click
 import os
@@ -17,7 +19,12 @@ from constants import (
     ITEM_URL_COL,
     SPLIT_TOKEN,
     MOSAIC_DIR,
+    OFFLINE_IMGS_DIR,
 )
+
+
+class UnexistingImageException(Exception):
+    pass
 
 
 @click.group()
@@ -28,19 +35,31 @@ def command_line_entrypoint():
     pass
 
 
-def download_image(item, image_url):
+def download_image(item, image_url, from_local=False):
     """
     Baixa a imagem do acervo, caso ela ainda não exista em disco
     """
+    if from_local:
+        image_path = OFFLINE_IMGS_DIR / f"{item}.jpg"
+        image_url = f'file://{image_path.resolve()}'
+
     suffix = Path(image_url).suffix or ".jpg"
     image_path = IMAGES_DIR / f"{item}{suffix}"
-
     if image_path.exists():
         return image_path
 
+    # para obras que não estão na wikimedia e buscamos no google
+    if from_local:
+        src_img = OFFLINE_IMGS_DIR / f"{item}.jpg"
+        if not src_img.exists():
+            raise UnexistingImageException(f"Imagem do item {item} não existe no diretório de imagens extras")
+        shutil.copy(src_img, image_path)
+        return image_path
+
+    # para obras que estão na wikimedia ou outra URL
     response = requests.get(image_url, allow_redirects=True)
     if not response.ok:
-        print(f"Não conseguiu baixar a url {image_url}")
+        raise UnexistingImageException(f"Não conseguiu baixar para o item {item} a url {image_url}")
 
     with Image.open(io.BytesIO(response.content)) as im:
         im.save(image_path, format="JPEG", quality="maximum", icc_profile=im.info.get("icc_profile"))
@@ -86,16 +105,27 @@ def clean_row(row):
 
     entry = row._asdict()
     img_url = entry[IMG_URL_COL]
+    # alguns colaboradores colocaram somente o código Q ao invés da URL para o item
+    if entry[ITEM_URL_COL].startswith('Q'):
+        item_id = entry[ITEM_URL_COL].strip()
+        entry[IMG_URL_COL] = f'http://www.wikidata.org/entity/{item_id}'
+
     item_url = urllib.parse.urlparse(entry[ITEM_URL_COL])
     item_id = item_url.path.split("/")[-1]
     entry["item_id"] = item_id
     entry["img_url"] = img_url
-    if img_url.strip() == "imagem do computador" or "drive.google.com" in img_url:
-        errors_list.append("Imagem indisponível na wikimedia e armazenada no Drive")
 
+    should_skip = False
+    email_regex = '^(\w|\.|\_|\-)+[@](\w|\_|\-|\.)+[.]\w{2,3}$'
+    if img_url.strip() == "imagem do computador" or "drive.google.com" in img_url:
+        entry['local_file'] = True
     # esses são erros que impedem o processamento da imagem já que não podemos baixá-la
-    if errors_list:
-        return entry, errors_list, True
+    if re.search(email_regex, img_url):
+        errors_list.append("Link da imagem com email (respostas antigas)")
+        should_skip = True
+    if not item_id.startswith('Q'):
+        errors_list.append("Link do item está errado (provavelmente com link da imagem)")
+        should_skip = True
 
     for caption in CAPTIONS:
         # sanitiza as captions para serem listas de coordenadas
@@ -139,7 +169,7 @@ def clean_row(row):
         for invalid in invalid_coords:
             entry[caption].remove(invalid)
 
-    return entry, errors_list, False
+    return entry, errors_list, should_skip
 
 
 @command_line_entrypoint.command("bbox")
@@ -149,17 +179,19 @@ def crop_bboxes(filename):
     for i, row in enumerate(analisys):
         entry, errors, skip_row = clean_row(row)
         if errors:
-            print(f"{entry['item_id']} - ERRO - linha {i + 2}:")
+            print(f"{entry['item_id']} - ERRO - linha {i + 2} por {entry['seu_email']}:")
             print("\t" + "\n\t".join(errors))
             if skip_row:
                 continue
         try:
-            image_path = download_image(entry["item_id"], entry["img_url"])
+            image_path = download_image(entry["item_id"], entry["img_url"], from_local=entry.get('local_file'))
             process_image(entry, image_path)
         except UnidentifiedImageError:
-            print(f"{entry['item_id']} - ERRO - linha {i + 2}:")
+            print(f"{entry['item_id']} - ERRO - linha {i + 2} por {entry['seu_email']}:")
             print("\tFalha ao tentar baixar a imagem")
-
+        except UnexistingImageException as e:
+            print(f"{entry['item_id']} - ERRO - linha {i + 2} por {entry['seu_email']}:")
+            print(f"\t{e}")
 
 if __name__ == "__main__":
     command_line_entrypoint()
