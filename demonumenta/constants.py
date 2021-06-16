@@ -41,8 +41,7 @@ CAPTIONS = [
     "ruas_e_pracas",
     "artefatos_domesticos_mobiliario_utilitarios_adornos_etc",
     "fauna",
-    "anjo",
 ]
 
 IMG_URL_COL = "link_do_arquivo_clique_no_link_da_planilha_e_copie_a_url_que_aparece_no_seu_browser_atencao_essa_url_termina_com_jpg"
-ITEM_URL_COL = "link_do_identificador_label_copie_e_cole_a_url_que_aparece_na_coluna_da_esquerda_ex_httpwwwwikidataorgentityq59924915_a_informacao_qxxxxxxxx_e_muito_importante"
+ITEM_URL_COL = "link_do_identificador_label_copie_e_cole_a_url_que_aparece_na_coluna_da_esquerda_ex_http_www_wikidata_org_entity_q59924915_a_informacao_qxxxxxxxx_e_muito_importante"
