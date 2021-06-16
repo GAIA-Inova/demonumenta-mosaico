@@ -145,8 +145,11 @@ def clean_row(row):
         for coord in coords:
             # cada tupla de coordenada deve ter somente 4 valores
             invalid = False
-            if len(coord) != 4:
+            if len(coord) > 4:
                 errors_list.append(f"Categoria {caption} com área de corte com mais de 4 pontos.")
+                invalid = True
+            if len(coord) < 4:
+                errors_list.append(f"Categoria {caption} com área de corte com menos de 4 pontos.")
                 invalid = True
 
             if invalid:
