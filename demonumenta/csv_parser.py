@@ -66,6 +66,7 @@ def process_image(data, image_path):
     """
     Gera todas as imagens de caixas marcadas para a imagem
     """
+    results = {}
     for caption in CAPTIONS:
         coords = data[caption]
         if not coords:
@@ -77,11 +78,18 @@ def process_image(data, image_path):
 
         item_id = data["item_id"]
         image = Image.open(image_path)
+        results[caption] = []
 
         for i, area in enumerate(coords):
             out_img = caption_dir / f"{item_id}-{caption}-{i:0>2d}.jpg"
+
+            results[caption].append({
+                'area': area,
+                'image': out_img,
+            })
             if out_img.exists():
                 continue
+
             crop = image.crop(area)
             crop.save(
                 out_img,
@@ -90,6 +98,8 @@ def process_image(data, image_path):
             )
 
         image.close()
+
+    return results
 
 
 def clean_row(row):
