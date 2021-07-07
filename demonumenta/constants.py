@@ -1,8 +1,9 @@
 from pathlib import Path
 
-DEMONUMENTA_ROOT = Path("/home/bernardo/envs/demonumenta-mosaico/demonumenta")
+DEMONUMENTA_ROOT = Path("/home/bernardo/envs/demonumenta/demonumenta")
 IMAGES_DIR = DEMONUMENTA_ROOT / "imagens"
 MOSAIC_DIR = DEMONUMENTA_ROOT / "mosaico"
+CAPTIONS_DIR = DEMONUMENTA_ROOT / "captions"
 OFFLINE_IMGS_DIR = DEMONUMENTA_ROOT / "AAA_Extras"
 SPLIT_TOKEN = "&"
 

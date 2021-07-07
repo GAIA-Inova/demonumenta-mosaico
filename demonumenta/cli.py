@@ -2,11 +2,13 @@
 import csv
 import click
 import rows
+from tqdm import tqdm
 from PIL import UnidentifiedImageError
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
-import csv_parser
 from constants import CAPTIONS, MOSAIC_DIR
+import csv_parser
+import tagging
 
 
 @click.group()
@@ -64,6 +66,21 @@ def crop_bboxes(filename):
         writer = csv.DictWriter(fd, fieldnames=output_rows[0].keys())
         writer.writeheader()
         writer.writerows(output_rows)
+
+
+@command_line_entrypoint.command("tag")
+@click.argument("filename", type=click.Path(exists=True))
+def crop_bboxes(filename):
+    annotations = list(rows.import_from_csv(filename))
+    rows_per_image = defaultdict(list)
+    for i, row in enumerate(annotations, start=2):
+        image_path = tagging.get_image_path(row.item)
+        if not image_path.exists():
+            print(f'Linha {i} com imagen faltando {row.item}')
+        rows_per_image[row.item].append(row)
+
+    for item, annotations in tqdm(list(rows_per_image.items())):
+        tagging.tag_image(item, annotations)
 
 
 if __name__ == "__main__":
