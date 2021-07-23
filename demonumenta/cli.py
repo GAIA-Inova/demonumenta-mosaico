@@ -2,11 +2,12 @@
 import csv
 import click
 import rows
+import extcolors
 from tqdm import tqdm
-from PIL import UnidentifiedImageError
+from PIL import UnidentifiedImageError, Image
 from collections import OrderedDict, defaultdict
 
-from constants import CAPTIONS, MOSAIC_DIR
+from constants import CAPTIONS, MOSAIC_DIR, CAPTIONS_REVERSE
 import csv_parser
 import tagging
 
@@ -70,7 +71,7 @@ def crop_bboxes(filename):
 
 @command_line_entrypoint.command("tag")
 @click.argument("filename", type=click.Path(exists=True))
-def crop_bboxes(filename):
+def tag_image(filename):
     annotations = list(rows.import_from_csv(filename))
     rows_per_image = defaultdict(list)
     for i, row in enumerate(annotations, start=2):
@@ -81,6 +82,53 @@ def crop_bboxes(filename):
 
     for item, annotations in tqdm(list(rows_per_image.items())):
         tagging.tag_image(item, annotations)
+
+
+@command_line_entrypoint.command("colors")
+@click.argument("filename", type=click.Path(exists=True))
+def add_colors_column(filename):
+    annotations = rows.import_from_csv(filename)
+
+    columns = list(annotations.field_names)
+    columns.extend(["pasta", "caminho completo", "cor 1", "cor 2", "cor 3"])
+    rows_with_colors = []
+
+    annotations = list(annotations)
+    for i, row in tqdm(enumerate(annotations, start=2), total=len(annotations)):
+        caption = tagging.get_caption_image_path(row)
+        if not caption.exists():
+            print(row.imagem, ' - ', row.categoria, f" Linha {i} - Imagem não existe")
+            continue
+
+        c1, c2, c3, = "", "", ""
+        try:
+            img = Image.open(caption.resolve())
+            colors, pixel_count = extcolors.extract_from_image(img)
+            if len(colors) >= 3:
+                c3 = colors[2][0]
+            if len(colors) >= 2:
+                c2 = colors[1][0]
+            if len(colors) >= 1:
+                c1 = colors[0][0]
+            img.close()
+        except Exception:
+            pass
+
+        new_row = row._asdict().copy()
+        new_row.update({
+            "cor 1": ",".join([str(c) for c in c1]),
+            "cor 2": ",".join([str(c) for c in c2]),
+            "cor 3": ",".join([str(c) for c in c3]),
+            "pasta": CAPTIONS_REVERSE[row.categoria],
+            "caminho completo": f"{CAPTIONS_REVERSE[row.categoria]}/{row.imagem}",
+        })
+        rows_with_colors.append(new_row)
+
+    with open('with-colors.csv', 'w') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=columns)
+
+        writer.writeheader()
+        writer.writerows(rows_with_colors)
 
 
 if __name__ == "__main__":
