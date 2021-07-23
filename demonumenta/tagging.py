@@ -2,7 +2,7 @@
 Script responsável por criar as imagens das obras com as anotações
 definidas pelos alunos durante o processo de classificação.
 """
-from constants import IMAGES_DIR, OFFLINE_IMGS_DIR, CAPTIONS_DIR
+from constants import IMAGES_DIR, OFFLINE_IMGS_DIR, CAPTIONS_DIR, CAPTIONS_REVERSE, MOSAIC_DIR
 
 from pathlib import Path
 import cv2
@@ -28,31 +28,50 @@ def get_image_path(item):
     return image_path
 
 
+def get_caption_image_path(row):
+    img_dir = CAPTIONS_REVERSE[row.categoria]
+    return MOSAIC_DIR / img_dir / row.imagem
+
+
 def tag_image(item, annotations):
     image_path = get_image_path(item)
     out_img = (CAPTIONS_DIR / f"{item}.jpg").resolve()
     if out_img.exists():
         return
 
-    out_path = str(out_img.resolve())
-    image = cv2.imread(str(image_path.resolve()))
+    img_pil = Image.open(str(image_path.resolve()))
+
+    # lógica para determinar tamanho da fonte em relação
+    # ao caption com maior texto
+    big_text = ""
     for annotation in annotations:
-        x1, y1, x2, y2 = [int(c) for c in annotation.area.split(',')]
-        p1, p2 = (x1, y1), (x2, y2)
-        image = tag_element(image, p1, p2, annotation.categoria)
+        if len(annotation.categoria) > len(big_text):
+            big_text = annotation.categoria
 
-    cv2.imwrite(out_path, image, [cv2.IMWRITE_JPEG_QUALITY, 80])
+    img_fraction = 0.1  # proporção do texto em relação a largura
+    font_size = 1  # tamanho inicial
+    font_name = "DejaVuSansCondensed-Bold.ttf"
+    font = ImageFont.truetype(font_name, font_size)
 
-    # esse hack é porque o open-cv não renderiza caracteres utf-8
-    font = ImageFont.truetype("DejaVuSansCondensed-Bold.ttf", 58)
-    img_pil = Image.open(out_path)
+    # incrementa o tamanho da fonte até ficar na proporçao desejada
+    while font.getsize(big_text)[0] < img_fraction * img_pil.size[0]:
+        font_size += 1
+        font = ImageFont.truetype(font_name, font_size)
+
     draw = ImageDraw.Draw(img_pil)
     for annotation in annotations:
+        text = annotation.categoria
         x1, y1, x2, y2 = [int(c) for c in annotation.area.split(',')]
         p1, p2 = (x1, y1), (x2, y2)
         text_p = (p1[0], p1[1])
-        draw.text(text_p, annotation.categoria, font=font, fill=BLACK)
+        color = get_valid_color(text)
 
+        box = draw.textbbox(text_p, text, font=font, stroke_width=2)
+        draw.rectangle(box, fill=color, outline=color, width=2)
+        draw.rectangle((p1, p2), outline=color, width=2)
+        draw.text(text_p, text, font=font, fill=BLACK)
+
+    out_path = str(out_img.resolve())
     img_pil.save(out_path, quality=80)
 
 
@@ -76,26 +95,3 @@ def get_valid_color(category, min_contrast_ratio=4.5, text_color=BLACK):
             contrast_ration = contrast.rgb_as_int(text_color, color)
         CATEGORY_COLORS[category] = color
     return CATEGORY_COLORS[category]
-
-
-def tag_element(img, p1, p2, tag):
-    """
-    p1 = (x1, y1)
-    p2 = (x2, y2) from the rectangle
-    More here: https://stackoverflow.com/questions/23720875/how-to-draw-a-rectangle-around-a-region-of-interest-in-python
-    """
-    text_p = (p1[0], p1[1] + TEXT_SIZE)
-
-    size = cv2.getTextSize(tag, font_face, scale, thickness)
-    label_background_start = (text_p[0], text_p[1] - TEXT_SIZE)
-    label_background_pos = (
-        label_background_start[0] + size[0][0],
-        label_background_start[1] + size[0][1] + 16,
-    )
-
-    color = get_valid_color(tag)
-    cv2.rectangle(img, p1, p2, color, 2)
-    cv2.rectangle(img, label_background_start, label_background_pos, color, -1)
-    #cv2.putText(img, tag, text_p, font_face, scale, BLACK, thickness, baseline)
-
-    return img
