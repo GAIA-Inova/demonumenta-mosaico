@@ -71,7 +71,8 @@ def crop_bboxes(filename):
 
 @command_line_entrypoint.command("tag")
 @click.argument("filename", type=click.Path(exists=True))
-def tag_image(filename):
+@click.option("--residual/--no-residual", default=False)
+def tag_image(filename, residual):
     annotations = list(rows.import_from_csv(filename))
     rows_per_image = defaultdict(list)
     for i, row in enumerate(annotations, start=2):
@@ -81,7 +82,10 @@ def tag_image(filename):
         rows_per_image[row.item].append(row)
 
     for item, annotations in tqdm(list(rows_per_image.items())):
-        tagging.tag_image(item, annotations)
+        if residual:
+            tagging.gen_residual_image(item, annotations)
+        else:
+            tagging.tag_image(item, annotations)
 
 
 @command_line_entrypoint.command("colors")

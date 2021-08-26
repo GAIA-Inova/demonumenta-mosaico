@@ -2,7 +2,7 @@
 Script responsável por criar as imagens das obras com as anotações
 definidas pelos alunos durante o processo de classificação.
 """
-from constants import IMAGES_DIR, OFFLINE_IMGS_DIR, CAPTIONS_DIR, CAPTIONS_REVERSE, MOSAIC_DIR
+from constants import IMAGES_DIR, OFFLINE_IMGS_DIR, CAPTIONS_DIR, CAPTIONS_REVERSE, MOSAIC_DIR, RESIDUALS_DIR
 
 from pathlib import Path
 import cv2
@@ -95,3 +95,22 @@ def get_valid_color(category, min_contrast_ratio=4.5, text_color=BLACK):
             contrast_ration = contrast.rgb_as_int(text_color, color)
         CATEGORY_COLORS[category] = color
     return CATEGORY_COLORS[category]
+
+
+def gen_residual_image(item, annotations):
+    image_path = get_image_path(item)
+    out_img = (RESIDUALS_DIR / f"{item}.png").resolve()
+    if out_img.exists():
+        return
+
+    img_pil = Image.open(str(image_path.resolve())).convert("RGBA")
+    for annotation in annotations:
+        x1, y1, x2, y2 = [int(c) for c in annotation.area.split(',')]
+
+        rect_pos = (x1, y1)
+        rect_size = (x2 - x1, y2 - y1)
+        rect = Image.new("RGBA", rect_size, (255, 255, 255, 0))
+        img_pil.paste(rect, rect_pos)
+
+    out_path = str(out_img.resolve())
+    img_pil.save(out_path)
